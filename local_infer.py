@@ -143,9 +143,9 @@ def process_input_file(
     #   Each line represents a task. The format for each line is:
     #     prompt_text[#duration][#unique_id]
     #   Examples:
-    #     A man is walking on the beach.#40#001
+    #     A man is walking on the beach.#60#001
     #     A woman is running.
-    #   If duration is not specified, the default is 100 frames (~5 seconds).
+    #   If duration is not specified, the default is 150 frames (~5 seconds).
     #   The unique_id is optional and can be used for naming output files.
     #
     # For json files:
@@ -155,7 +155,7 @@ def process_input_file(
     #   {
     #     "test": [
     #       "A man is dancing #30",
-    #       "A person jumps #50"
+    #       "A person jumps #60"
     #     ],
     #   }
     #   Each entry in the value list follows the same line format as the txt file.
@@ -186,7 +186,7 @@ def process_input_file(
             split_list = text_line.split("#")
             prompt = split_list[0].strip()
             length = int(split_list[1]) if len(split_list) > 1 else 100
-            test_time = length / 20.0
+            test_time = length / 30.0
             orig_fileidx = split_list[2] if len(split_list) > 2 else f"{itext}"
             save_orig_fileidx = int(re.sub(r"\s+", "", orig_fileidx.replace(".", "_").replace("/", "__")))
             formatted_idx = f"{save_orig_fileidx:08d}"
@@ -211,7 +211,7 @@ def process_input_file(
                 split_list = text_line.strip().split("#")
                 prompt = split_list[0].strip()
                 length = int(split_list[1]) if len(split_list) > 1 else 100
-                test_time = length / 20.0
+                test_time = length / 30.0
                 orig_fileidx = split_list[2] if len(split_list) > 2 else f"{itext}"
                 save_orig_fileidx = int(
                     re.sub(
