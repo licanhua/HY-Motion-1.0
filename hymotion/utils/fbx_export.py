@@ -62,10 +62,8 @@ def export_motion_to_fbx(
                      not template_fbx.endswith("boy_Rigging_smplx_tex.fbx"))
     
     if is_custom_fbx:
-        print(f"[FBX Export] Using custom FBX with retargeting: {template_fbx}")
         return _export_with_retargeting(motion_data, output_path, template_fbx, text_description)
     else:
-        print(f"[FBX Export] Using wooden boy template")
         return _export_wooden_boy(motion_data, output_path, text_description)
 
 
@@ -146,13 +144,10 @@ def _export_wooden_boy(
             print(f"[FBX Export] Successfully exported FBX: {output_path}")
             
             # Save text description if provided
-            if text_description:
+            if success and text_description:
                 txt_path = output_path.replace(".fbx", ".txt")
                 with open(txt_path, "w", encoding="utf-8") as f:
                     f.write(text_description)
-                print(f"[FBX Export] Saved description: {txt_path}")
-        else:
-            print(f"[FBX Export] Failed to export FBX")
         
         return success
         
@@ -202,9 +197,6 @@ def _export_with_retargeting(
             return False
         
         # Extract and convert motion data
-        # Debug: print available keys
-        print(f"[FBX Export] Available keys in motion_data: {list(motion_data.keys())}")
-        
         rot6d = motion_data.get('rot6d')
         transl = motion_data.get('transl')
         
@@ -498,16 +490,11 @@ def load_motion_from_npz(npz_path: str) -> Dict[str, Any]:
     data = np.load(npz_path, allow_pickle=True)
     motion_data = {}
     
-    # Debug: print what's actually in the file
-    print(f"[FBX Export] Keys in NPZ file: {list(data.keys())}")
-    
     # Load all available fields
     for key in ['rot6d', 'transl', 'keypoints3d', 'root_rotations_mat', 
                 'poses', 'trans', 'betas', 'gender', 'mocap_framerate', 'num_frames', 'Rh']:
         if key in data:
             motion_data[key] = data[key]
-            if hasattr(data[key], 'shape'):
-                print(f"[FBX Export] Loaded {key}: shape={data[key].shape}")
     
     # Load metadata
     if 'text' in data:

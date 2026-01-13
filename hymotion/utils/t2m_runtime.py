@@ -459,7 +459,6 @@ class T2MRuntime:
                         "keypoints3d": keypoints3d.cpu().numpy() if hasattr(keypoints3d, 'cpu') else keypoints3d,
                     }
                     np.savez_compressed(npz_path, **npz_dict)
-                    print(f"\t>>> NPZ file saved (rot6d format): {npz_path}")
                 
                 txt_path = fbx_path.replace(".fbx", ".txt")
                 with open(txt_path, "w", encoding="utf-8") as f:

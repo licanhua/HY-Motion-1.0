@@ -543,7 +543,6 @@ class T2MGradioUI:
     def _retarget_to_custom_fbx(self, original_fbx_files, custom_fbx_path):
         """Retarget generated motion to custom FBX skeleton."""
         from hymotion.utils.fbx_export import export_motion_to_fbx, load_motion_from_npz
-        import uuid
         
         retargeted_files = []
         
@@ -560,7 +559,6 @@ class T2MGradioUI:
             
             try:
                 # Load motion data from NPZ
-                print(f"[FBX Export] Loading motion from: {npz_file}")
                 motion_data = load_motion_from_npz(npz_file)
                 
                 # Generate output filename
@@ -578,7 +576,6 @@ class T2MGradioUI:
                         text_description = f.read().strip()
                 
                 # Export with retargeting
-                print(f"[FBX Export] Retargeting to custom skeleton: {custom_fbx_path}")
                 success = export_motion_to_fbx(
                     motion_data=motion_data,
                     output_path=output_fbx,
@@ -594,9 +591,9 @@ class T2MGradioUI:
                         with open(retargeted_txt, 'w', encoding='utf-8') as f:
                             f.write(text_description)
                         retargeted_files.append(retargeted_txt)
-                    print(f">>> Exported retargeted motion to: {output_fbx}")
+                    print(f">>> Retargeted: {os.path.basename(output_fbx)}")
                 else:
-                    print(f">>> Failed to export motion to custom FBX: {fbx_file}")
+                    print(f">>> Failed to retarget: {os.path.basename(fbx_file)}")
                     
             except Exception as e:
                 print(f">>> Error retargeting {fbx_file}: {e}")
@@ -604,11 +601,10 @@ class T2MGradioUI:
                 traceback.print_exc()
         
         if retargeted_files:
-            print(f">>> Custom FBX retargeting complete: {len(retargeted_files)} files created")
-            # Return both original and retargeted files
+            print(f">>> Retargeting complete: {len(retargeted_files)} files")
             return original_fbx_files + retargeted_files
         else:
-            print(">>> No retargeted files created, returning original files")
+            print(">>> No retargeted files created")
             return original_fbx_files
 
     def _get_example_choices(self):

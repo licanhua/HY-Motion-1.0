@@ -6,6 +6,8 @@ This guide explains how to export generated motion to FBX files using the standa
 
 The FBX export functionality has been extracted from the ComfyUI nodes and made available as a standalone module. It supports:
 - **Wooden Boy Export**: Export to the default wooden boy character template
+- **Custom FBX Retargeting**: Retarget motion to any custom FBX skeleton (e.g., Mixamo characters)
+- **Gradio UI Integration**: Upload custom FBX directly in the web interface
 - **Batch Processing**: Export multiple motions at once
 - **NPZ to FBX Conversion**: Convert saved motion NPZ files to FBX
 
@@ -29,10 +31,16 @@ Integrated FBX export function: `export_wooden_boy_fbx(smpl_data_list, output_di
 
 ### 1. Command Line (Direct Export)
 
-Export an NPZ file to FBX:
+Export an NPZ file to FBX (wooden boy):
 
 ```bash
 python hymotion/utils/fbx_export.py --input output/gradio/motion_xxx_000.npz --output output/test.fbx
+```
+
+Export with custom FBX template (retargeting):
+
+```bash
+python hymotion/utils/fbx_export.py --input output/gradio/motion_xxx_000.npz --output output/custom.fbx --template path/to/custom_character.fbx
 ```
 
 ### 2. Test Script (Single File)
@@ -55,11 +63,19 @@ python test_fbx_export.py --motion_npz_dir output/gradio --output_dir output/tes
 
 Use in your Python code:
 
-```python
-from hymotion.utils.fbx_export import export_motion_to_fbx, load_motion_from_npz
+```pythonwooden boy FBX
+success = export_motion_to_fbx(
+    motion_data=motion_data,
+    output_path="output/my_animation.fbx",
+    text_description="A person walking forward"
+)
 
-# Load motion from NPZ
-motion_data = load_motion_from_npz("output/gradio/motion_xxx_000.npz")
+# Export to custom FBX character (with retargeting)
+success = export_motion_to_fbx(
+    motion_data=motion_data,
+    output_path="output/custom_animation.fbx",
+    text_description="A person walking forward",
+    template_fbx="path/to/mixamo_character.fbxdio/motion_xxx_000.npz")
 
 # Export to FBX
 success = export_motion_to_fbx(
@@ -101,20 +117,37 @@ The motion data should be a dictionary containing:
 
 ## Workflow Integration
 
-### Typical Workflow:
+### Workflow 1: Gradio Web Interface (Easiest)
 
-1. **Generate Motion** (using Gradio or local_infer.py)
+1. **Start Gradio App**
    ```bash
    python gradio_app.py
-   # Or
+   ```
+
+2. **Generate Motion with Custom Character**
+   - Enter text prompt
+   - Upload custom FBX (optional)
+   - Click Generate
+   - Download FBX files
+
+3. **Import into 3D Software** (Blender, Maya, Unreal Engine, etc.)
+
+### Workflow 2: Command Line
+
+1. **Generate Motion** (using local_infer.py)
+   ```bash
    python local_infer.py --text "a person walks forward" --seeds 42
    ```
 
 2. **Motion is Saved as NPZ** (in `output/gradio/` or specified directory)
 
-3. **Export to FBX** (using test script or API)
+3. **Export to FBX** (wooden boy or custom)
    ```bash
-   python test_fbx_export.py --motion_npz output/gradio/motion_xxx_000.npz --output_dir output/fbx
+   # Wooden boy
+   python hymotion/utils/fbx_export.py --input output/gradio/motion_xxx_000.npz --output output/result.fbx
+   
+   # Custom character
+   python hymotion/utils/fbx_export.py --input output/gradio/motion_xxx_000.npz --output output/custom.fbx --template path/to/character.fbx
    ```
 
 4. **Import FBX into 3D Software** (Blender, Maya, Unreal Engine, etc.)
@@ -131,18 +164,42 @@ The motion data should be a dictionary containing:
 ```
 assets/wooden_models/boy_Rigging_smplx_tex.fbx
 ```
+Custom FBX Retargeting
 
-### Issue: "Import errors"
-**Solution:** Make sure you're running from the project root directory:
+### Method 1: Gradio Web Interface (Recommended)
+
+1. Generate motion using text prompt
+2. Upload your custom FBX character (e.g., from Mixamo) in the "Custom FBX Skeleton" section
+3. Click Generate - the motion will be automatically retargeted to your character
+4. Download both wooden boy and retargeted FBX files
+
+### Method 2: Command Line
+
+Use the `fbx_export.py` module with `--template` parameter:
+
+```bash
+python hymotion/utils/fbx_export.py \
+    --input output/gradio/motion_xxx_000.npz \
+    --output output/retargeted.fbx \
+    --template path/to/custom_character.fbx
+```
+
+### Method 3: Standalone Retargeting Tool
+
+For advanced control, use `retarget_fbx.py` directly
 ```bash
 cd /path/to/HY-Motion-1.0
 python test_fbx_export.py ...
-```
-
-## Advanced: Custom FBX Skeletons
-
-For custom FBX skeletons (Mixamo, etc.), use the existing `retarget_fbx.py` module:
-
+``**Wooden boy export** uses the SMPL-H to wooden FBX converter (`smplh2woodfbx.py`)
+- **Custom FBX export** uses automatic retargeting via `retarget_fbx.py`
+- Output FBX files include:
+  - `.fbx` - The animation file
+  - `.npz` - Motion data in rot6d format (for retargeting)
+  - `.txt` - Text description (if provided)
+- Frame rate is fixed at 30 FPS
+- The wooden boy template is a simple wooden mannequin suitable for animation preview
+- Custom FBX characters (e.g., Mixamo) are automatically retargeted using bone mapping
+- Retargeting supports automatic height scaling and orientation adjustment
 ```bash
 python hymotion/utils/retarget_fbx.py \
     --source output/gradio/motion_xxx_000.npz \
@@ -153,13 +210,44 @@ python hymotion/utils/retarget_fbx.py \
 ```
 
 ## Notes
+ with custom FBX support:
 
-- The wooden boy export uses the SMPL-H to wooden FBX converter (`smplh2woodfbx.py`)
-- Output FBX files include:
-  - `.fbx` - The animation file
-  - `.txt` - Text description (if provided)
-- Frame rate is fixed at 30 FPS
-- The template character is a simple wooden mannequin suitable for animation preview
+### Basic Workflow:
+1. Enter your text prompt (e.g., "a person walks forward")
+2. Click "Generate Motion" button
+3. Wooden boy FBX is automatically generated
+4. Download files from the interface
+
+### Custom Character Workflow:
+### From Gradio (with custom FBX):
+```
+output/gradio/
+├── 20260112_143052_a7f3b1d2_000.fbx              # Wooden boy animation
+├── 20260112_143052_a7f3b1d2_000.npz              # Motion data (rot6d format)
+├── 20260112_143052_a7f3b1d2_000.txt              # Text description
+├── retargeted_20260112_143052_a7f3b1d2_000.fbx   # Custom character animation
+├── retargeted_20260112_143052_a7f3b1d2_000.txt   # Text description
+└── ...
+```
+
+### From test script
+2. (Optional) Open "Custom FBX Skeleton" accordion
+3. Upload your custom FBX character (e.g., Mixamo character)
+4. Click "Generate Motion" button
+5. System generates:
+   - Wooden boy FBX (for preview)
+   - Retargeted FBX (your custom character with the motion)
+   - NPZ files (for both formats)
+6. Download all files from the interface
+
+### Files Generated:
+- `timestamp_id_000.fbx` - Wooden boy animation
+- `timestamp_id_000.npz` - Motion data (rot6d format)
+- `timestamp_id_000.txt` - Text description
+- `retargeted_timestamp_id_000.fbx` - Custom character animation (if custom FBX uploaded)
+- `retargeted_timestamp_id_000.txt` - Text description for retargeted animation
+
+All files are saved to `output/gradio/` directory
 
 ## Example Filenames
 
