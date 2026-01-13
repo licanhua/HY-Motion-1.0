@@ -486,6 +486,7 @@ class T2MGradioUI:
         seed_input: str,
         duration: float,
         cfg_scale: float,
+        custom_fbx_path: Optional[str] = None,
     ) -> Tuple[str, List[str]]:
         # When rewrite is not available, use original_text directly
         if not self.prompt_engineering_available:
@@ -513,6 +514,11 @@ class T2MGradioUI:
                 original_text=original_text,
                 output_dir=self.args.output_dir,
             )
+            
+            # If custom FBX is provided, retarget the generated motion to it
+            if custom_fbx_path and fbx_ok:
+                print(f">>> Starting custom FBX retargeting: {custom_fbx_path}")
+                fbx_files = self._retarget_to_custom_fbx(fbx_files, custom_fbx_path)
             # Escape HTML content for srcdoc attribute
             escaped_html = html_content.replace('"', "&quot;")
             # Return iframe with srcdoc - directly embed HTML content
@@ -527,10 +533,83 @@ class T2MGradioUI:
             return iframe_html, fbx_files
         except Exception as e:
             print(f"\t>>> Motion generation failed: {e}")
+            import traceback
+            traceback.print_exc()
             return (
                 f"❌ Motion generation failed: {str(e)}\n\nPlease check the input parameters or try again later",
                 [],
             )
+    
+    def _retarget_to_custom_fbx(self, original_fbx_files, custom_fbx_path):
+        """Retarget generated motion to custom FBX skeleton."""
+        from hymotion.utils.fbx_export import export_motion_to_fbx, load_motion_from_npz
+        import uuid
+        
+        retargeted_files = []
+        
+        # Process each NPZ file (find matching NPZ for each FBX)
+        for fbx_file in original_fbx_files:
+            if not fbx_file.endswith('.fbx'):
+                continue
+                
+            # Find corresponding NPZ file (same base name)
+            npz_file = fbx_file.replace('.fbx', '.npz')
+            if not os.path.exists(npz_file):
+                print(f"Warning: NPZ file not found for {fbx_file}")
+                continue
+            
+            try:
+                # Load motion data from NPZ
+                print(f"[FBX Export] Loading motion from: {npz_file}")
+                motion_data = load_motion_from_npz(npz_file)
+                
+                # Generate output filename
+                base_name = os.path.basename(fbx_file).replace('.fbx', '')
+                output_fbx = os.path.join(
+                    os.path.dirname(fbx_file),
+                    f"retargeted_{base_name}.fbx"
+                )
+                
+                # Get text description if available
+                txt_file = fbx_file.replace('.fbx', '.txt')
+                text_description = ""
+                if os.path.exists(txt_file):
+                    with open(txt_file, 'r', encoding='utf-8') as f:
+                        text_description = f.read().strip()
+                
+                # Export with retargeting
+                print(f"[FBX Export] Retargeting to custom skeleton: {custom_fbx_path}")
+                success = export_motion_to_fbx(
+                    motion_data=motion_data,
+                    output_path=output_fbx,
+                    text_description=text_description,
+                    template_fbx=custom_fbx_path,
+                )
+                
+                if success:
+                    retargeted_files.append(output_fbx)
+                    # Copy text description to retargeted file
+                    if text_description:
+                        retargeted_txt = output_fbx.replace('.fbx', '.txt')
+                        with open(retargeted_txt, 'w', encoding='utf-8') as f:
+                            f.write(text_description)
+                        retargeted_files.append(retargeted_txt)
+                    print(f">>> Exported retargeted motion to: {output_fbx}")
+                else:
+                    print(f">>> Failed to export motion to custom FBX: {fbx_file}")
+                    
+            except Exception as e:
+                print(f">>> Error retargeting {fbx_file}: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        if retargeted_files:
+            print(f">>> Custom FBX retargeting complete: {len(retargeted_files)} files created")
+            # Return both original and retargeted files
+            return original_fbx_files + retargeted_files
+        else:
+            print(">>> No retargeted files created, returning original files")
+            return original_fbx_files
 
     def _get_example_choices(self):
         """Get all example choices from all data sources"""
@@ -641,6 +720,19 @@ class T2MGradioUI:
                         label="📊 Status Information",
                         value=status_msg,
                     )
+
+                    # Custom FBX Upload section
+                    with gr.Accordion("🎭 Custom FBX Skeleton (Optional)", open=False):
+                        self.custom_fbx_upload = gr.File(
+                            label="Upload Custom FBX Character",
+                            file_types=[".fbx"],
+                            type="filepath",
+                        )
+                        gr.Markdown(
+                            "> **Upload a custom FBX character to retarget the generated motion (e.g., Mixamo characters)**\n\n"
+                            "> If you upload a custom FBX, the motion will be retargeted to your character's skeleton. "
+                            "This is useful for applying motions to game characters, avatars, or any rigged FBX model."
+                        )
 
                     # FBX Download section
                     with gr.Row(visible=False) as self.fbx_download_row:
@@ -773,6 +865,7 @@ class T2MGradioUI:
                 self.seed_input,
                 self.duration_slider,
                 self.cfg_slider,
+                self.custom_fbx_upload,
             ],
             outputs=[self.output_display, self.fbx_files],
             concurrency_limit=NUM_WORKERS,
