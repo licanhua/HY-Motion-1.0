@@ -244,7 +244,9 @@ output/gradio/
 - `timestamp_id_000.fbx` - Wooden boy animation
 - `timestamp_id_000.npz` - Motion data (rot6d format)
 - `timestamp_id_000.txt` - Text description
+- `timestamp_id_000.glb` - GLB format for web preview
 - `retargeted_timestamp_id_000.fbx` - Custom character animation (if custom FBX uploaded)
+- `retargeted_timestamp_id_000.glb` - Custom character GLB for web preview
 - `retargeted_timestamp_id_000.txt` - Text description for retargeted animation
 
 All files are saved to `output/gradio/` directory
@@ -259,12 +261,39 @@ output/test_fbx/
 └── ...
 ```
 
+## 3D Preview Feature
+
+When you upload a custom FBX character in the Gradio interface, an interactive 3D preview is automatically generated showing all characters side-by-side:
+
+### Features:
+- **Multiple Characters**: Wooden boy and retargeted characters displayed together
+- **1 Unit Spacing**: Each character positioned exactly 1.0 unit apart on X-axis
+- **Interactive Controls**:
+  - Left-click drag: Rotate camera
+  - Right-click drag: Pan camera
+  - Mouse wheel: Zoom in/out
+  - Play/Pause buttons: Control all animations
+  - Reset Camera button: Return to default view
+- **Real-time Animation**: All characters animate simultaneously
+- **Character Labels**: Each model labeled with its filename
+
+### Testing 3D Preview:
+```bash
+python test_3d_preview.py
+```
+
+### Requirements for 3D Preview:
+```bash
+pip install 'trimesh[easy]'
+```
+
+Or install Blender for higher quality conversion (auto-detected if available).
+
 ## Integration with Gradio
 
-The FBX export is automatically available in the Gradio interface:
+The FBX export is automatically available in the Gradio interface with 3D preview support:
 1. Generate motion using text prompt
-2. Motion is saved as NPZ in `output/gradio/`
-3. (Optional) Call `export_wooden_boy_fbx()` to also generate FBX files
-4. Download FBX files from the interface
-
-The retargeting to custom FBX skeletons is handled separately using the existing `retarget_util.py` module in the Gradio app.
+2. (Optional) Upload custom FBX character
+3. Motion is generated and saved to `output/gradio/`
+4. If custom FBX uploaded: retargeting happens automatically + 3D preview generated
+5. Download FBX files and view 3D preview in the interface
